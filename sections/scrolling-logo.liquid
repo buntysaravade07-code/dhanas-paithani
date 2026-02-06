@@ -1,0 +1,206 @@
+{% schema %}
+{
+  "name": "Logo Marquee",
+  "settings": [
+    {
+      "type": "text",
+      "id": "title",
+      "label": "Heading",
+      "default": "Trusted by"
+    },
+    {
+      "type": "color",
+      "id": "background_color",
+      "label": "Background Color",
+      "default": "#FFFFFF"
+    },
+    {
+      "type": "range",
+      "id": "scroll_speed",
+      "min": 10,
+      "max": 60,
+      "step": 5,
+      "unit": "s",
+      "label": "Scroll Speed",
+      "default": 20
+    },
+    {
+      "type": "range",
+      "id": "marquee_height",
+      "min": 40,
+      "max": 200,
+      "step": 10,
+      "unit": "px",
+      "label": "Marquee Height",
+      "default": 100
+    },
+    {
+      "type": "range",
+      "id": "logo_height",
+      "min": 20,
+      "max": 100,
+      "step": 5,
+      "unit": "px",
+      "label": "Logo Height",
+      "default": 30
+    },
+    {
+      "type": "range",
+      "id": "logo_spacing",
+      "min": 20,
+      "max": 100,
+      "step": 5,
+      "unit": "px",
+      "label": "Space Between Logos",
+      "default": 40
+    },
+    {
+      "type": "checkbox",
+      "id": "enable_grayscale",
+      "label": "Enable grayscale effect",
+      "default": true
+    }
+  ],
+  "blocks": [
+    {
+      "type": "logo",
+      "name": "Logo",
+      "settings": [
+        {
+          "type": "image_picker",
+          "id": "logo",
+          "label": "Logo image"
+        },
+        {
+          "type": "url",
+          "id": "link",
+          "label": "Logo Link",
+          "info": "Optional"
+        }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "Logo Marquee",
+      "blocks": [
+        { "type": "logo" },
+        { "type": "logo" },
+        { "type": "logo" }
+      ]
+    }
+  ]
+}
+{% endschema %}
+
+<style>
+.marquee-section {
+  padding: 40px 0;
+  overflow: hidden;
+  background-color: {{ section.settings.background_color }};
+}
+
+.marquee-heading {
+  text-align: center;
+  font-size: 24px;
+  margin-bottom: 40px;
+}
+
+.marquee-container {
+  width: 100%;
+  height: {{ section.settings.marquee_height }}px;
+  overflow: hidden;
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.marquee-content {
+  display: flex;
+  animation: scrollX {{ section.settings.scroll_speed }}s linear infinite;
+  gap: {{ section.settings.logo_spacing }}px;
+}
+
+.marquee-content:hover {
+  animation-play-state: paused;
+}
+
+.logo-item {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.logo-item img {
+  height: {{ section.settings.logo_height }}px;
+  width: auto;
+  object-fit: contain;
+  {% if section.settings.enable_grayscale %}
+  filter: grayscale(100%);
+  opacity: 0.7;
+  transition: all 0.3s ease;
+  {% endif %}
+}
+
+{% if section.settings.enable_grayscale %}
+.logo-item img:hover {
+  filter: grayscale(0%);
+  opacity: 1;
+}
+{% endif %}
+
+@keyframes scrollX {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+</style>
+
+<section class="marquee-section" data-section-id="{{ section.id }}" data-section-type="logo-marquee">
+  {% if section.settings.title != blank %}
+    <h2 class="marquee-heading">{{ section.settings.title }}</h2>
+  {% endif %}
+  {% if section.blocks.size > 0 %}
+    <div class="marquee-container">
+      <div class="marquee-content" id="marquee-{{ section.id }}">
+        {% for i in (1..2) %}
+          {% for block in section.blocks %}
+            {% if block.settings.logo %}
+              <div class="logo-item" {{ block.shopify_attributes }}>
+                {%- if block.settings.link != blank -%}
+                  <a href="{{ block.settings.link }}">
+                {%- endif -%}
+                <img
+                  src="{{ block.settings.logo | img_url: 'master' }}"
+                  alt="{{ block.settings.logo.alt | escape }}"
+                  loading="lazy"
+                  width="{{ block.settings.logo.width }}"
+                  height="{{ block.settings.logo.height }}">
+                {%- if block.settings.link != blank -%}
+                  </a>
+                {%- endif -%}
+              </div>
+            {%- endif -%}
+          {% endfor %}
+        {% endfor %}
+      </div>
+    </div>
+  {% endif %}
+</section>
+
+<script>
+document.addEventListener('shopify:section:load', function(event) {
+  if (event.target.querySelector('.marquee-content')) {
+    const marquee = event.target.querySelector('.marquee-content');
+    marquee.addEventListener('animationend', function() {
+      this.style.animation = 'none';
+      this.offsetHeight; // Trigger reflow
+      this.style.animation = null;
+    });
+  }
+});
+</script>
